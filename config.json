@@ -1,0 +1,16 @@
+{
+    "credentials": {
+      "reddit-id": "w9xc_RtuSWBcZoRuCbVPg",
+      "reddit-username": "beastdevacc",
+      "reddit-secret": "kcdSuKfX5xh_8EzRJGog877K0S8yrw"
+    },
+    "config": {
+      "comments-cap": 10,
+      "batch-size": 100,
+      "laps": 1,
+      "utc-after": "",
+      "output-dir": "./"
+    },
+    "subreddits": ["AskReddit"],
+    "keyword": "tal comentario"
+  }

@@ -1,3 +1,4 @@
+import argparse
 import sys
 import csv
 import json
@@ -102,6 +103,7 @@ def dictlist_to_csv(file_path: str, dictionaries_list: List[dict]):
         dict_writer.writeheader()
         dict_writer.writerows(dictionaries_list)
 
+keyword = sys.argv[-1]
 
 def init_locals(debug: str,
                 output_dir: str,
@@ -182,8 +184,11 @@ def comments_fetcher(sub, output_manager, reddit_api, comments_cap):
             "parent_id": comment.parent_id,
             "permalink": comment.permalink,
         }
-        output_manager.comments_raw_list.append(comment.__dict__)
-        output_manager.comments_list.append(comment_useful_data)
+
+        jsonData = json.dumps(comment_useful_data, indent=4)
+        if keyword in jsonData:
+            output_manager.comments_raw_list.append(comment.__dict__)
+            output_manager.comments_list.append(comment_useful_data)
 
 
 def submission_fetcher(sub, output_manager: OutputManager):
@@ -200,8 +205,12 @@ def submission_fetcher(sub, output_manager: OutputManager):
         "selftext": self_text_normalized,
         "full_link": sub.full_link,
     }
-    output_manager.submissions_list.append(submission_useful_data)
-    output_manager.submissions_raw_list.append(sub.d_)
+
+    jsonData = json.dumps(submission_useful_data, indent=4)
+    if keyword in jsonData:
+        output_manager.submissions_list.append(submission_useful_data)
+        output_manager.submissions_raw_list.append(sub.d_)
+    
 
 
 class HelpMessages:
