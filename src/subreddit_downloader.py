@@ -165,7 +165,7 @@ def utc_range_calculator(utc_received: int,
     return utc_lower_bound, utc_upper_bound
 
 
-def comments_fetcher(sub, output_manager, reddit_api, comments_cap, keyword):
+def comments_fetcher(sub, output_manager, reddit_api, comments_cap, kws):
     """
     Comments fetcher
     Get all comments with depth-first approach
@@ -189,12 +189,15 @@ def comments_fetcher(sub, output_manager, reddit_api, comments_cap, keyword):
             "permalink": comment.permalink,
         }
 
-        if keyword in json.dumps(comment_useful_data, indent=4):
-            output_manager.comments_raw_list.append(comment.__dict__)
-            output_manager.comments_list.append(comment_useful_data)
+        for keyword in kws:
+            if keyword in json.dumps({ "body": comment_useful_data["body"] }, indent=4):
+                logger.info(f'Found occurence of {keyword}')
+                output_manager.comments_raw_list.append(comment.__dict__)
+                output_manager.comments_list.append(comment_useful_data)
+                break
+    
 
-
-def submission_fetcher(sub, output_manager: OutputManager, keyword: str):
+def submission_fetcher(sub, output_manager: OutputManager, kws):
     """
     Get and store reddit submission info
     """
@@ -209,9 +212,17 @@ def submission_fetcher(sub, output_manager: OutputManager, keyword: str):
         "full_link": sub.full_link,
     }
 
-    if keyword in json.dumps(submission_useful_data, indent=4):
-        output_manager.submissions_list.append(submission_useful_data)
-        output_manager.submissions_raw_list.append(sub.d_)
+    search_data = {
+        'title':submission_useful_data["title"],
+        'selftext': submission_useful_data["selftext"]
+    }
+
+    for keyword in kws:
+        if keyword in json.dumps(search_data, indent=4):
+            logger.info(f'Found occurence of {keyword}')
+            output_manager.submissions_list.append(submission_useful_data)
+            output_manager.submissions_raw_list.append(sub.d_)
+            break
     
 
 
@@ -290,15 +301,16 @@ def main(subreddit: str = Argument(..., help=HelpMessages.subreddit),
                                                                      after=utc_upper_bound if direction == "after" else None,
                                                                      before=utc_lower_bound if direction == "before" else None,
                                                                      )
+            parsedKeywords = keyword.split(',')
 
             for sub in submissions_generator:
                 logger.debug(f"New submission `{sub.full_link}` - created_utc: {sub.created_utc}")
 
                 # Fetch the submission data
-                submission_fetcher(sub, out_manager, keyword)
+                submission_fetcher(sub, out_manager, parsedKeywords)
 
                 # Fetch the submission's comments
-                comments_fetcher(sub, out_manager, reddit_api, comments_cap, keyword)
+                comments_fetcher(sub, out_manager, reddit_api, comments_cap, parsedKeywords)
 
                 # Calculate the UTC seen range
                 utc_lower_bound, utc_upper_bound = utc_range_calculator(sub.created_utc,
