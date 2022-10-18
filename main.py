@@ -15,11 +15,10 @@ def parse_command(subreddit, keyword, **args):
         cmd = ['python src/subreddit_downloader.py {0} '.format(subreddit)];
 
         for arg in args:
-            print(arg)
             if args[arg]:
                 cmd.append('--{0} {1} '.format(arg, args[arg]))
 
-        cmd.append('"{0}"'.format(keyword))
+        cmd.append('--keyword "{0}"'.format(keyword))
 
         return ''.join(cmd);
 

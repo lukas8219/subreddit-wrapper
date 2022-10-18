@@ -103,8 +103,6 @@ def dictlist_to_csv(file_path: str, dictionaries_list: List[dict]):
         dict_writer.writeheader()
         dict_writer.writerows(dictionaries_list)
 
-keyword = sys.argv[-1]
-
 def init_locals(debug: str,
                 output_dir: str,
                 subreddit: str,
@@ -132,6 +130,12 @@ def init_clients(reddit_id: str,
                  reddit_username: str
                  ) -> (PushshiftAPI, praw.Reddit):
     pushshift_api = PushshiftAPI()
+
+    print({
+        'reddit_id': reddit_id,
+        'reddit_secret': reddit_secret,
+        'reddit_username': reddit_username
+    })
 
     reddit_api = praw.Reddit(
         client_id=reddit_id,
@@ -161,7 +165,7 @@ def utc_range_calculator(utc_received: int,
     return utc_lower_bound, utc_upper_bound
 
 
-def comments_fetcher(sub, output_manager, reddit_api, comments_cap):
+def comments_fetcher(sub, output_manager, reddit_api, comments_cap, keyword):
     """
     Comments fetcher
     Get all comments with depth-first approach
@@ -185,13 +189,12 @@ def comments_fetcher(sub, output_manager, reddit_api, comments_cap):
             "permalink": comment.permalink,
         }
 
-        jsonData = json.dumps(comment_useful_data, indent=4)
-        if keyword in jsonData:
+        if keyword in json.dumps(comment_useful_data, indent=4):
             output_manager.comments_raw_list.append(comment.__dict__)
             output_manager.comments_list.append(comment_useful_data)
 
 
-def submission_fetcher(sub, output_manager: OutputManager):
+def submission_fetcher(sub, output_manager: OutputManager, keyword: str):
     """
     Get and store reddit submission info
     """
@@ -206,8 +209,7 @@ def submission_fetcher(sub, output_manager: OutputManager):
         "full_link": sub.full_link,
     }
 
-    jsonData = json.dumps(submission_useful_data, indent=4)
-    if keyword in jsonData:
+    if keyword in json.dumps(submission_useful_data, indent=4):
         output_manager.submissions_list.append(submission_useful_data)
         output_manager.submissions_raw_list.append(sub.d_)
     
@@ -232,6 +234,7 @@ class HelpMessages:
                    f"If provided, the system requires new comments `comments_cap` times to the praw API." \
                    f"`comments_cap` under the hood will be passed directly to `replace_more` function as " \
                    f"`limit` parameter. For more info see the README and visit {help_praw_replace_more_url}."
+    keyword = "The keyword to search for"
 
 
 # noinspection PyTypeChecker
@@ -247,6 +250,7 @@ def main(subreddit: str = Argument(..., help=HelpMessages.subreddit),
          utc_before: Optional[str] = Option(None, help=HelpMessages.utc_before),
          comments_cap: Optional[int] = Option(None, help=HelpMessages.comments_cap),
          debug: bool = Option(False, help=HelpMessages.debug),
+         keyword: str = Option("", help=HelpMessages.keyword)
          ):
     """
     Download all the submissions and relative comments from a subreddit.
@@ -291,10 +295,10 @@ def main(subreddit: str = Argument(..., help=HelpMessages.subreddit),
                 logger.debug(f"New submission `{sub.full_link}` - created_utc: {sub.created_utc}")
 
                 # Fetch the submission data
-                submission_fetcher(sub, out_manager)
+                submission_fetcher(sub, out_manager, keyword)
 
                 # Fetch the submission's comments
-                comments_fetcher(sub, out_manager, reddit_api, comments_cap)
+                comments_fetcher(sub, out_manager, reddit_api, comments_cap, keyword)
 
                 # Calculate the UTC seen range
                 utc_lower_bound, utc_upper_bound = utc_range_calculator(sub.created_utc,
